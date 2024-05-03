@@ -1,10 +1,13 @@
+import re
 import os
 import pdb
+import numpy as np
 
 """Descubrimientos:
-    1) Longitud de lineas en bytes:
+    1) Longitud de lineas en bytes (sin contar los dos bites de \\r\\n):
         - SPU (20210730): [78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 0, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 0]
         - EAFIT (2022/04/13/): [78, 88, 78, 78, 78, 78, 78, 0, 65520, 8000, 65520, 8000, 0]
+        - El problema de las coordenadas no es que no se leean correctamente, si no que aumenta la longitud de bytes de la línea
 """
 
 def contar_bytes_por_linea(file_path):
@@ -16,14 +19,38 @@ def contar_bytes_por_linea(file_path):
 
     return bytes_por_linea
 
+def fix_coodinates(header):
+
+    lines = re.split("(\r\n)", header)
+    lines = [lines[i] + lines[i + 1] for i in range(0, len(lines) - 1, 2)]
+    
+    
+    # PAtron de longitud y latitud a buscar
+    patron = r"-?\d{3,4}\.\d+"
+
+    longitude, latitude = re.findall(patron, lines[1])
+    pdb.set_trace() 
+    
+
+    fixed_header = header
+    return fixed_header
 
 def modify_header(file_path):
     # Intenta abrir el archivo para leer y escribir en binario
     try:
         with open(file_path, 'rb+') as file:
-            # Supongamos que el encabezado tiene un tamaño fijo de 1024 bytes
-            pdb.set_trace()
-            original_header = file.read(1024)
+            # Supongamos que el encabezado tiene un tamaño fijo de 80 bytes
+            header_lines_len = contar_bytes_por_linea(file_path)
+            header_lines = header_lines_len.index(0)
+            header_bytes = (np.array(header_lines_len[:header_lines]) + 2)
+            
+
+
+            original_header = file.read(header_bytes.sum())
+            original_header_str = original_header.decode('utf-8')
+            modified_header = fix_coodinates(original_header_str)
+
+            #pdb.set_trace() 
             
             # Aquí modificas el encabezado como necesites, esto es solo un ejemplo
             modified_header = original_header  # Cambia esto según lo que necesites arreglar
