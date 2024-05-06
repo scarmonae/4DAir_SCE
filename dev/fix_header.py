@@ -37,28 +37,38 @@ def fix_coodinates(header):
 
 def modify_header(file_path):
     # Intenta abrir el archivo para leer y escribir en binario
+    print(f'Procesando {file_path}')
     try:
         with open(file_path, 'rb+') as file:
             # Supongamos que el encabezado tiene un tamaño fijo de 80 bytes
+            File = file.read()
+            file.seek(0)
             header_lines_len = contar_bytes_por_linea(file_path)
             header_lines = header_lines_len.index(0)
             header_bytes = (np.array(header_lines_len[:header_lines]) + 2)
             
-
-
             original_header = file.read(header_bytes.sum())
             original_header_str = original_header.decode('utf-8')
             
-            
             # Aquí modificas el encabezado como necesites, esto es solo un ejemplo
             modified_header = fix_coodinates(original_header_str) # Cambia esto según lo que necesites arreglar
+            
+            #####
+            
             modified_header = modified_header.encode('utf-8')
-            # pdb.set_trace()
+            modified_header_lines_len = [len(linea) for linea in modified_header.split(b'\r\n')] 
+            modified_header_lines = modified_header_lines_len.index(0)
+            # modified_header_bytes = (np.array(modified_header_lines_len[:modified_header_lines]) + 2)
+
 
             # Regresa al inicio del archivo para sobreescribir el encabezado
+
+            new_file = b'\r\n'.join(modified_header.split(b'\r\n') + File.split(b'\r\n')[header_lines+1:])
+            
             file.seek(0)
-            file.write(modified_header)
-            # No tocamos el resto del archivo, solo el encabezado
+            file.write(new_file)
+            file.truncate(len(new_file))
+
     except IOError as e:
         print(f"Hubo un problema con el archivo {file_path}: {e}")
 
