@@ -25,14 +25,14 @@ def fix_coodinates(header):
     lines = [lines[i] + lines[i + 1] for i in range(0, len(lines) - 1, 2)]
     
     
-    # PAtron de longitud y latitud a buscar
+    # Patron de longitud y latitud a buscar
     patron = r"-?\d{3,4}\.\d+"
 
     longitude, latitude = re.findall(patron, lines[1])
-    pdb.set_trace() 
-    
 
-    fixed_header = header
+    fixed_header = header.replace(longitude, f"{float(longitude):06.1f}")
+    fixed_header = fixed_header.replace(latitude, f"{float(latitude):06.1f}")
+
     return fixed_header
 
 def modify_header(file_path):
@@ -48,19 +48,19 @@ def modify_header(file_path):
 
             original_header = file.read(header_bytes.sum())
             original_header_str = original_header.decode('utf-8')
-            modified_header = fix_coodinates(original_header_str)
-
-            #pdb.set_trace() 
+            
             
             # Aquí modificas el encabezado como necesites, esto es solo un ejemplo
-            modified_header = original_header  # Cambia esto según lo que necesites arreglar
+            modified_header = fix_coodinates(original_header_str) # Cambia esto según lo que necesites arreglar
+            modified_header = modified_header.encode('utf-8')
+            # pdb.set_trace()
 
             # Regresa al inicio del archivo para sobreescribir el encabezado
             file.seek(0)
             file.write(modified_header)
             # No tocamos el resto del archivo, solo el encabezado
     except IOError as e:
-        print(f"Ojo, hubo un problema con el archivo {file_path}: {e}")
+        print(f"Hubo un problema con el archivo {file_path}: {e}")
 
 def iterate_directories(root_directory):
     # Camina por todos los directorios y archivos empezando desde root_directory
