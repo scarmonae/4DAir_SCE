@@ -6,9 +6,12 @@ import numpy as np
 """Descubrimientos:
     1) Longitud de lineas en bytes (sin contar los dos bites de \\r\\n):
         - SPU (20210730): [78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 0, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 0]
-        - EAFIT (2022/04/13/): [78, 88, 78, 78, 78, 78, 78, 0, 65520, 8000, 65520, 8000, 0]
-        - El problema de las coordenadas no es que no se leean correctamente, si no que aumenta la longitud de bytes de la línea
-"""
+        - EAFIT (2022/04/13/): [78, 88, 78, 78, 78, 78, 78, 0, 65520, 8000, 65520, 8000, 0], ¿La longitud de las líneas correspindiente a los canal es diferente?
+        - El problema de las coordenadas no es que no se leean correctamente, si no que aumenta la longitud de bytes de la línea. Aparentemento, esto no es un problema
+        - La cantidad de bit y los disparos por canal no se leen bien, se pierded byes al inicio del dato.
+        - El ángulo Cenital no se gaurda bien, por ejemplo: [90.0,0.0,0.0,0.0,0.0,...]
+        - Duda sobre la lectura de la polarización, ya que en el conjunto de prueba se tienen 11 vaslores pero son 12 DS y en e EAFIT se tiene 3 valorers pero son 4 canales
+        """     
 
 def contar_bytes_por_linea(file_path):
     with open(file_path, 'rb') as file:
@@ -35,6 +38,41 @@ def fix_coodinates(header):
 
     return fixed_header
 
+def fix_wavelength(header, wavelength:str = "00532"):
+
+    pol = {'s': 'l',
+           'p': 's'}
+
+    # Función para realizar el reemplazo
+    def replace_match(match):
+        number = wavelength  # Nuevo número que quieres usar
+        suffix = match.group().split('.')[-1]  # Conservar el sufijo original (.p o .s)
+        
+        return f"{number}.{pol[suffix]}" # No corregir
+
+
+    lines = re.split("(\r\n)", header)
+    lines = [lines[i] + lines[i + 1] for i in range(0, len(lines) - 1, 2)]
+    
+    
+    # Patron de longitud y latitud a buscar
+    patron = r"\d{5}\.[ps]"
+
+    # Lista para guardar las cadenas modificadas
+    modified_lines = []
+
+    # Iterar sobre cada línea en la lista
+    for line in lines:
+        # Reemplazar todas las coincidencias en la línea actual
+        
+        modified_line = re.sub(patron, replace_match, line)
+        # Agregar la línea modificada a la lista de líneas modificadas
+        modified_lines.append(modified_line)
+    # pdb.set_trace()
+    return ''.join(modified_lines)
+
+    #return fixed_header
+
 def modify_header(file_path):
     # Intenta abrir el archivo para leer y escribir en binario
     print(f'Procesando {file_path}')
@@ -52,7 +90,8 @@ def modify_header(file_path):
             
             # Aquí modificas el encabezado como necesites, esto es solo un ejemplo
             modified_header = fix_coodinates(original_header_str) # Cambia esto según lo que necesites arreglar
-            
+            modified_header = fix_wavelength(modified_header)
+            # pdb.set_trace()
             #####
             
             modified_header = modified_header.encode('utf-8')
